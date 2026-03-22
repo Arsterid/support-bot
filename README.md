@@ -1,10 +1,31 @@
 Support Bot
 -
-___
 
-A Telegram bot using the Django REST API. Designed to receive, process, and respond to support requests.
+A ticket-processing system, which uses Telegram bot to receive support tickets and Django to store and process them.
+
+How the system works:
+
+1. Creating the ticket.
+   1. The user logs into the bot and starts working.
+   2. The user creates a ticket through the bot, specifying its name.
+   3. The user creates a message in the ticket, describing their problem.
+2. Processing the ticket.
+   1. The administrator or moderator (hereinafter referred to as the user) logs into the ticket processing panel (currently in progress).
+   2. The user receives active tickets.
+   3. The user reads the active ticket.
+   4. The user sends a message to the ticket.
+   5. The ticket is then assigned to the user and is no longer considered active, as its status changes to "in progress."
+3. Continuing to work with the ticket.
+   1. The ticket creator (hereinafter referred to as the user) receives a message through the bot informing them of a new message.
+   2. The user reads the message.
+   3. The user replies to the message or closes the ticket if the issue is resolved.
+   4. If a ticket is closed, it is assigned the corresponding status and becomes available for reading, but not editing.
+   5. The bot user can view their own ticket history, as well as the message history for each ticket, at any time.
+
+---
 
 Used technologies:
+- `Docker`
 - `Django`
 - `aiogram` and `aiogram-dialogs`
 - `uv`
@@ -49,5 +70,3 @@ python -c "from django.core.management.utils import get_random_secret_key; print
 ```bash
 docker-compose up --build 
 ```
-
-Now just wait for containers to build, and the bot is ready to use!

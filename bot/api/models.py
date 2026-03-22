@@ -3,24 +3,7 @@ from typing import Optional, List
 from pydantic import BaseModel
 
 
-class PageQuery(BaseModel):
-    page: Optional[int] = None
-
-
-class RetrieveQuery(BaseModel):
-    pk: int
-
-
-class PaginatedRetrieveQuery(PageQuery, RetrieveQuery):
-    pass
-
-
-class PaginatedPage(BaseModel):
-    count: int
-    max_pages: int
-    next: Optional[int] = None
-    previous: Optional[int] = None
-
+# TODO rewrite to T
 
 class User(BaseModel):
     id: int
@@ -39,10 +22,6 @@ class TicketMessage(BaseModel):
     created_at: str
 
 
-class PaginatedTicketMessages(PaginatedPage):
-    results: List[TicketMessage]
-
-
 class Ticket(BaseModel):
     id: int
     user: User
@@ -55,18 +34,14 @@ class Ticket(BaseModel):
     updated_at: str
 
 
-class PaginatedTickets(PaginatedPage):
-    results: List[Ticket]
-
-
-class CreateTicketMessage(BaseModel):
+class TicketMessageCreateBody(BaseModel):
     text: str
     ticket: int
 
 
-class CreateTicket(BaseModel):
+class TicketCreateBody(BaseModel):
     name: str
 
 
-class CreatedObject(BaseModel):
+class ObjectCreateResponse(BaseModel):
     id: int

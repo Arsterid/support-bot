@@ -1,4 +1,7 @@
-class BotApi:
+from typing import Optional, Awaitable
+
+
+class BotApiClient:
     def __init__(self, client):
         self.client = client
 
@@ -19,52 +22,49 @@ class BotApi:
         assert callable(method), "Client has not implemented method {}".format(method)
         return method
 
-    async def get_ticket_messages(self, user_id: int, ticket_id: int, page: int = 1):
-        headers = self._get_default_headers(user_id=user_id)
-        query_params = {
-            "page": page,
-            "pk": ticket_id
-        }
+    def _request(
+            self,
+            user_id: int,
+            method_name: str,
+            *,
+            headers: Optional[dict] = None,
+            body: Optional[dict] = None,
+            query_params: Optional[dict] = None
+    ) -> Awaitable:
+        default_headers = self._get_default_headers(user_id=user_id)
+        headers = {**default_headers, **headers}
 
-        method = self._get_client_method("get_ticket_messages")
-        return await method(headers=headers, query_params=query_params)
+        method = self._get_client_method(method_name)
+        return method(headers=headers, body=body, query_params=query_params)
+
+    # Ticket
 
     async def get_ticket(self, user_id: int, ticket_id: int):
-        headers = self._get_default_headers(user_id=user_id)
-        query_params = {
+        return self._request(user_id, "get_ticket", query_params={
             "pk": ticket_id
-        }
-
-        method = self._get_client_method("get_ticket")
-        return await method(headers=headers, query_params=query_params)
-
-    async def create_ticket_message(self, user_id: int, ticket_id: int, text: str):
-        headers = self._get_default_headers(user_id=user_id)
-        body = {
-            "text": text,
-            "ticket": ticket_id
-        }
-
-        method = self._get_client_method("create_ticket_message")
-        return await method(headers=headers, body=body)
+        })
 
     async def get_tickets(self, user_id: int, page: int = 1):
-        headers = self._get_default_headers(user_id=user_id)
-        query_params = {"page": page}
-
-        method = self._get_client_method("get_tickets")
-        return await method(headers=headers, query_params=query_params)
+        return self._request(user_id, "get_tickets", query_params={
+            "page": page,
+        })
 
     async def create_ticket(self, user_id: int, name: str):
-        headers = self._get_default_headers(user_id=user_id)
-        body = {"name": name}
-
-        method = self._get_client_method("create_ticket")
-        return await method(headers=headers, body=body)
+        return self._request(user_id, "create_ticket", body={"name": name})
 
     async def close_ticket(self, user_id: int, ticket_id: int):
-        headers = self._get_default_headers(user_id=user_id)
-        query_params = {"pk": ticket_id}
+        return self._request(user_id, "close_ticket", query_params={"pk": ticket_id})
 
-        method = self._get_client_method("close_ticket")
-        return await method(headers=headers, query_params=query_params)
+    # Ticket messages
+
+    async def get_ticket_messages(self, user_id: int, ticket_id: int, page: int = 1):
+        return self._request(user_id, "get_ticket_messages", query_params={
+            "page": page,
+            "pk": ticket_id
+        })
+
+    async def create_ticket_message(self, user_id: int, ticket_id: int, text: str):
+        return self._request(user_id, "create_ticket_message", body={
+            "text": text,
+            "ticket": ticket_id
+        })

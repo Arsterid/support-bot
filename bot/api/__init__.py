@@ -1,8 +1,7 @@
-from api.bot_api import BotApi
+from api.client import BotApiClient
+from api.models import TicketMessage, TicketMessageCreateBody, Ticket, TicketCreateBody, ObjectCreateResponse
 from core.api.client import ApiClient
-from api.models import PageQuery, PaginatedRetrieveQuery, PaginatedTicketMessages, CreateTicketMessage, \
-    PaginatedTickets, \
-    CreateTicket, RetrieveQuery, CreatedObject, Ticket
+from core.api.models import PaginatedRetrieveQuery, PaginatedResult, PageQuery, RetrieveQuery
 
 from settings import Settings
 
@@ -19,27 +18,27 @@ client.register_endpoint(
     name="get_ticket_messages",
     path="tickets/ticket_messages/{id}/list_messages_for_ticket/",
     query_validator=PaginatedRetrieveQuery,
-    response_validator=PaginatedTicketMessages,
+    response_validator=PaginatedResult[TicketMessage],
     method="GET"
 )
 client.register_endpoint(
     name="create_ticket_message",
     path="tickets/ticket_messages/",
-    body_validator=CreateTicketMessage,
+    body_validator=TicketMessageCreateBody,
     method="POST"
 )
 client.register_endpoint(
     name="get_tickets",
     path="tickets/tickets/",
     query_validator=PageQuery,
-    response_validator=PaginatedTickets,
+    response_validator=PaginatedResult[Ticket],
     method="GET"
 )
 client.register_endpoint(
     name="create_ticket",
     path="tickets/tickets/",
-    body_validator=CreateTicket,
-    response_validator=CreatedObject,
+    body_validator=TicketCreateBody,
+    response_validator=ObjectCreateResponse,
     method="POST"
 )
 client.register_endpoint(
@@ -56,4 +55,4 @@ client.register_endpoint(
     method="POST"
 )
 
-bot_api = BotApi(client)
+bot_api = BotApiClient(client)
