@@ -3,6 +3,7 @@ from typing import Dict, Type, Optional, Any, Literal
 
 import httpx
 from pydantic import BaseModel
+from core.api.models import _Unset
 
 from core.api.endpoint import Endpoint
 
@@ -24,13 +25,22 @@ class ApiClient:
 
     def register_endpoint(
             self,
-            name: str,
             path: str,
+            name: str = None,
+            method: Literal["GET", "POST", "DELETE", "PATCH"] = 'POST',
+            *,
             body_validator: Optional[Type[BaseModel]] = None,
             query_validator: Optional[Type[BaseModel]] = None,
             response_validator: Optional[Type[BaseModel]] = None,
-            method: Literal["GET", "POST", "DELETE", "PATCH"] = 'POST'
     ):
+        if name is None:
+            name = path.split("/")[-1]
+        if name in self.endpoints:
+            raise ValueError(f"Endpoint with name '{name}' already exists.")
+        if method == "GET" and body_validator is not None:
+            raise ValueError(
+                "Method 'GET' cannot be used with body validator, as GET method doesn't have request body."
+            )
         self.endpoints[name] = Endpoint(path, body_validator, query_validator, response_validator, method)
 
     def request(self, endpoint: Endpoint):
@@ -47,18 +57,25 @@ class ApiClient:
 
             if query_params:
                 pk = query_params.pop('pk', None)
-                if isinstance(pk, int):
-                    if "{id}" in path:
+                if "{id}" in path:
+                    if isinstance(pk, int):
                         path = path.replace("{id}", str(pk))
+                    else:
+                        raise ValueError(f"Invalid pk parameter type. Expected int but got '{type(pk)}'")
+
+                query_params = {key: val for key, val in query_params.items() if val != _Unset}
 
             url = f"{self.base_url}/{path}"
 
             final_headers = {**self.client.headers, **(headers or {})}
+            data = validated_data.get("data")
+            if isinstance(data, dict):
+                data = {key: val for key, val in validated_data.get("data").items() if val != _Unset}
 
             response = await self.client.request(
                 method=endpoint.method,
                 url=url,
-                data=validated_data.get("data"),
+                data=data,
                 params=query_params,
                 headers=final_headers,
                 **kwargs,

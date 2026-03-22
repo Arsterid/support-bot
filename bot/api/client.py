@@ -1,59 +1,70 @@
-from api.bot_api import BotApi
-from core.api.client import ApiClient
-from api.models import PageQuery, PaginatedRetrieveQuery, PaginatedTicketMessages, CreateTicketMessage, \
-    PaginatedTickets, \
-    CreateTicket, RetrieveQuery, CreatedObject, Ticket
+from typing import Optional, Awaitable
 
-from settings import Settings
 
-settings = Settings()
+class BotApiClient:
+    def __init__(self, client):
+        self.client = client
 
-client = ApiClient(
-    base_url=settings.base_api_url,
-    headers={
-        "X-Telegram-Bot-Api-Token": str(settings.bot_api_token),
-    }
-)
+    def _form_auth_header_for_user(self, user_id: int):
+        return {"X-Telegram-User-Id": str(user_id)}
 
-client.register_endpoint(
-    name="get_ticket_messages",
-    path="tickets/ticket_messages/{id}/list_messages_for_ticket/",
-    query_validator=PaginatedRetrieveQuery,
-    response_validator=PaginatedTicketMessages,
-    method="GET"
-)
-client.register_endpoint(
-    name="create_ticket_message",
-    path="tickets/ticket_messages/",
-    body_validator=CreateTicketMessage,
-    method="POST"
-)
-client.register_endpoint(
-    name="get_tickets",
-    path="tickets/tickets/",
-    query_validator=PageQuery,
-    response_validator=PaginatedTickets,
-    method="GET"
-)
-client.register_endpoint(
-    name="create_ticket",
-    path="tickets/tickets/",
-    body_validator=CreateTicket,
-    response_validator=CreatedObject,
-    method="POST"
-)
-client.register_endpoint(
-    name="get_ticket",
-    path="tickets/tickets/{id}",
-    query_validator=RetrieveQuery,
-    response_validator=Ticket,
-    method="GET"
-)
-client.register_endpoint(
-    name="close_ticket",
-    path="tickets/tickets/{id}/close_ticket/",
-    query_validator=RetrieveQuery,
-    method="POST"
-)
+    def _get_default_headers(self, **kwargs):
+        headers = {}
 
-bot_api = BotApi(client)
+        user_id = kwargs.get("user_id")
+        if isinstance(user_id, int):
+            headers.update(self._form_auth_header_for_user(user_id))
+
+        return headers
+
+    def _get_client_method(self, method: str) -> callable:
+        method = getattr(self.client, method)
+        assert callable(method), "Client has not implemented method {}".format(method)
+        return method
+
+    def _request(
+            self,
+            user_id: int,
+            method_name: str,
+            *,
+            headers: Optional[dict] = None,
+            body: Optional[dict] = None,
+            query_params: Optional[dict] = None
+    ) -> Awaitable:
+        default_headers = self._get_default_headers(user_id=user_id)
+        headers = {**default_headers, **headers}
+
+        method = self._get_client_method(method_name)
+        return method(headers=headers, body=body, query_params=query_params)
+
+    # Ticket
+
+    async def get_ticket(self, user_id: int, ticket_id: int):
+        return self._request(user_id, "get_ticket", query_params={
+            "pk": ticket_id
+        })
+
+    async def get_tickets(self, user_id: int, page: int = 1):
+        return self._request(user_id, "get_tickets", query_params={
+            "page": page,
+        })
+
+    async def create_ticket(self, user_id: int, name: str):
+        return self._request(user_id, "create_ticket", body={"name": name})
+
+    async def close_ticket(self, user_id: int, ticket_id: int):
+        return self._request(user_id, "close_ticket", query_params={"pk": ticket_id})
+
+    # Ticket messages
+
+    async def get_ticket_messages(self, user_id: int, ticket_id: int, page: int = 1):
+        return self._request(user_id, "get_ticket_messages", query_params={
+            "page": page,
+            "pk": ticket_id
+        })
+
+    async def create_ticket_message(self, user_id: int, ticket_id: int, text: str):
+        return self._request(user_id, "create_ticket_message", body={
+            "text": text,
+            "ticket": ticket_id
+        })

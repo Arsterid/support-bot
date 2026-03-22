@@ -3,21 +3,13 @@ from typing import Optional
 from aiogram_dialog import Dialog, Window
 from aiogram_dialog.widgets.input import TextInput
 from aiogram_dialog.widgets.text import Const, Format, Multi, Case
-from aiogram_dialog.widgets.kbd import Button, Row, Select, ScrollingGroup, Column
+from aiogram_dialog.widgets.kbd import Button, Row, Select, Column, SwitchTo
 
-from handlers.handlers import switch_state_to_tickets_list, on_select_ticket, tickets_getter, \
-    switch_state_to_new_ticket, create_new_ticket, ticket_messages_getter, switch_state_to_new_message, \
-    create_new_ticket_message, switch_state_to_main, switch_state_to_view_ticket, create_pagination_handlers, \
-    close_ticket
+from handlers.handlers import create_pagination_handlers
+from handlers.ticket import close_ticket, create_new_ticket, on_select_ticket, tickets_getter
+from handlers.ticket_message import create_new_ticket_message, ticket_messages_getter
 from states import BotStates
 from texts import Texts
-
-start_window = Window(
-    Const(Texts.WELCOME),
-    Button(Const(Texts.NEW_TICKET), id="new_ticket", on_click=switch_state_to_new_ticket),
-    Button(Const(Texts.VIEW_TICKETS), id="my_tickets", on_click=switch_state_to_tickets_list),
-    state=BotStates.MAIN,
-)
 
 
 def create_pager(
@@ -34,6 +26,14 @@ def create_pager(
     )
 
     return pager
+
+
+start_window = Window(
+    Const(Texts.WELCOME),
+    SwitchTo(Const(Texts.NEW_TICKET), id="new_ticket", state=BotStates.NEW_TICKET),
+    SwitchTo(Const(Texts.VIEW_TICKETS), id="my_tickets", state=BotStates.TICKETS_LIST),
+    state=BotStates.MAIN,
+)
 
 
 ticket_list_window = Window(
@@ -62,7 +62,7 @@ ticket_list_window = Window(
         ),
     ),
     create_pager("tickets_list"),
-    Button(Const(Texts.BACK), id="back", on_click=switch_state_to_main),
+    SwitchTo(Const(Texts.NEW_TICKET), id="new_ticket", state=BotStates.MAIN),
     state=BotStates.TICKETS_LIST,
     getter=tickets_getter,
 )
@@ -73,7 +73,7 @@ new_ticket_window = Window(
         id="new_ticket",
         on_success=create_new_ticket,
     ),
-    Button(Const(Texts.BACK), id="back", on_click=switch_state_to_main),
+    SwitchTo(Const(Texts.NEW_TICKET), id="new_ticket", state=BotStates.MAIN),
     state=BotStates.NEW_TICKET,
 )
 
@@ -86,8 +86,8 @@ view_ticket_window = Window(
     ),
     create_pager("ticket_view", "ticket_id"),
     Button(Const(Texts.CLOSE_TICKET), id="close_ticket", on_click=close_ticket, when="is_open"),
-    Button(Const(Texts.NEW_MESSAGE), id="new_message", on_click=switch_state_to_new_message, when="is_open"),
-    Button(Const(Texts.BACK), id="back", on_click=switch_state_to_tickets_list),
+    SwitchTo(Const(Texts.NEW_MESSAGE), id="new_ticket", state=BotStates.NEW_MESSAGE, when="is_open"),
+    SwitchTo(Const(Texts.BACK), id="new_ticket", state=BotStates.TICKETS_LIST),
     state=BotStates.VIEW_TICKET,
     getter=ticket_messages_getter
 )
@@ -98,7 +98,7 @@ new_message_window = Window(
         id="new_message",
         on_success=create_new_ticket_message
     ),
-    Button(Const(Texts.BACK), id="back", on_click=switch_state_to_view_ticket),
+    SwitchTo(Const(Texts.BACK), id="back", state=BotStates.VIEW_TICKET),
     state=BotStates.NEW_MESSAGE,
 )
 
