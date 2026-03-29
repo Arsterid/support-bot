@@ -38,7 +38,7 @@ ___
 1. Clone the repository
 
 ```bash
-git clone https://github.com/Prisma4/support-bot.git
+git clone https://github.com/Arsterid/support-bot.git
 cd support-bot
 ```
 
